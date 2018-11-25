@@ -175,6 +175,7 @@ public class AgenteEdimbrujo {
                     boolean dead = (boolean) attrs.get("dead");
                     int x = (int) (long) ((JSONObject) ((JSONObject) attrs.get("super")).get("Entity")).get("x");
                     int y = (int) (long) ((JSONObject) ((JSONObject) attrs.get("super")).get("Entity")).get("y");
+                    System.out.println("LA TOWER ESTA "+dead);
                     towers.add(new Tower(dead, x, y, id));
                 }
             }
@@ -217,7 +218,6 @@ public class AgenteEdimbrujo {
     private static Point canFireTower() {
         Point xy = null;
         int i = 0;
-        int j = 0;
         int x;
         int y;
         boolean found = false;
@@ -413,6 +413,7 @@ public class AgenteEdimbrujo {
 
     private static void cleanLists() {
         players.clear();
+        towers.clear();
     }
 
 }
