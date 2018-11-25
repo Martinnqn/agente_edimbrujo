@@ -31,6 +31,7 @@ public class AgenteEdimbrujo {
     private static String fullState;
     private static Mapa mapa;
     private static LinkedList<Spawn> spawns = new LinkedList<>();
+    private static LinkedList<Tower> towers = new LinkedList<>();
     private static String nameT;
     private static Player player;
     private static LinkedList<Player> players = new LinkedList<>();
@@ -53,13 +54,15 @@ public class AgenteEdimbrujo {
                 cargarDinamicS();
                 if (startGame && player != null && !player.dead) {
                     acc = selectAction();
-                    switch (acc.nombre) {
-                        case "move":
-                            con.makeAction(acc.accion);
-                            break;
-                        case "fire":
-                            con.makeRangeAtack(acc.accion);
-                            break;
+                    if (acc != null) {
+                        switch (acc.nombre) {
+                            case "move":
+                                con.makeAction(acc.accion);
+                                break;
+                            case "fire":
+                                con.makeRangeAtack(acc.accion);
+                                break;
+                        }
                     }
                 }
             }
@@ -69,7 +72,7 @@ public class AgenteEdimbrujo {
     }
 
     private static Accion selectAction() {
-        Accion res;
+        Accion res = null;
         //si ataca
         if (player.role == 1) {
             Point xy = canFireTower();
@@ -78,8 +81,10 @@ public class AgenteEdimbrujo {
             } else {
                 xy = closestTower();
                 //calcular movimiento
-                String dir = calcMove(xy);
-                res = new Accion("move", dir);
+                if (xy != null) {
+                    String dir = calcMove(xy);
+                    res = new Accion("move", dir);
+                }
             }
         } else {
             //si defiende
@@ -89,8 +94,10 @@ public class AgenteEdimbrujo {
             } else {
                 xy = closestEnemy();
                 //calcular movimiento
-                String dir = calcMove(xy);
-                res = new Accion("move", dir);
+                if (xy != null) {
+                    String dir = calcMove(xy);
+                    res = new Accion("move", dir);
+                }
             }
         }
         return res;
@@ -143,6 +150,7 @@ public class AgenteEdimbrujo {
 
             if (startGame) {
                 JSONObject attrs;
+                //players
                 if ((attrs = (JSONObject) dinamicS.get("Player")) != null) {
                     String id = attrs.get("id").toString();
                     if (id.equals(nameT)) {
@@ -161,6 +169,14 @@ public class AgenteEdimbrujo {
                         players.add(new Player(dead, team, role, x, y));
                     }
                 }
+                //torres
+                if ((attrs = (JSONObject) dinamicS.get("Tower")) != null) {
+                    String id = attrs.get("id").toString();
+                    boolean dead = (boolean) attrs.get("dead");
+                    int x = (int) (long) ((JSONObject) ((JSONObject) attrs.get("super")).get("Entity")).get("x");
+                    int y = (int) (long) ((JSONObject) ((JSONObject) attrs.get("super")).get("Entity")).get("y");
+                    towers.add(new Tower(dead, x, y, id));
+                }
             }
             i++;
         }
@@ -170,16 +186,15 @@ public class AgenteEdimbrujo {
         Point xy = null;
         int dist = 80000;
         int auxDist;
-        for (Spawn spawn : spawns) {
-            if (spawn.name.equals("SpawnTower")) {
-                auxDist = Math.abs(spawn.x - player.x) + Math.abs(spawn.y - player.y);
+        for (Tower tower : towers) {
+            if (!tower.dead) {
+                auxDist = Math.abs(tower.x - player.x) + Math.abs(tower.y - player.y);
                 if (auxDist < dist) {
                     dist = auxDist;
-                    xy = new Point(spawn.x, spawn.y);
+                    xy = new Point(tower.x, tower.y);
                 }
             }
         }
-
         return xy;
     }
 
@@ -188,7 +203,7 @@ public class AgenteEdimbrujo {
         int dist = 80000;
         int auxDist;
         for (Player pl : players) {
-            if (pl.team != player.team) {
+            if (pl.team != player.team && !pl.dead) {
                 auxDist = (pl.x - player.x) + (pl.y - player.y);
                 if (auxDist < dist) {
                     dist = auxDist;
@@ -205,32 +220,16 @@ public class AgenteEdimbrujo {
         int j = 0;
         int x;
         int y;
-        boolean flag = true;
-        boolean isOk = false;
-        while (i < spawns.size() && !isOk) {
-            if (spawns.get(i).name.equals("SpawnTower")) {
-                x = spawns.get(i).x;
-                y = spawns.get(i).y;
-                while (flag && !isOk) {
-                    if (x > player.x) {
-                        x--;
-                    } else if (x < player.x) {
-                        x++;
-                    }
-                    if (y > player.y) {
-                        y--;
-                    } else if (y < player.y) {
-                        y++;
-                    }
-                    flag = mapa.canWalk(new Point(x, y));
-                    isOk = (x == player.x && (y == player.y));
-                }
-            }
+        boolean found = false;
+        while (i < towers.size() && !found) {
+            x = towers.get(i).x;
+            y = towers.get(i).y;
+            found = canFire(new Point(x, y), new Point(player.x, player.y));
             i++;
         }
-        if (isOk) {
+        if (found) {
             i--;
-            xy = new Point(spawns.get(i).x, spawns.get(i).y);
+            xy = new Point(towers.get(i).x, towers.get(i).y);
         }
         return xy;
     }
@@ -238,52 +237,14 @@ public class AgenteEdimbrujo {
     private static Point canFireEnemy() {
         Point xy = null;
         int i = 0;
-        int j = 0;
         int x;
         int y;
-        boolean flag = true;
         boolean found = false;
-        System.out.println("playersize " + players.size());
-        while (i < players.size() && flag && !found) {
-            if (players.get(i).team != player.team) {
+        while (i < players.size() && !found) {
+            if (players.get(i).team != player.team && !players.get(i).dead) {
                 x = players.get(i).x;
                 y = players.get(i).y;
-                int menorX = (x < player.x) ? x : player.x;
-                int menorY = (y < player.y) ? y : player.y;
-                if (x == player.x) {
-                    int distY = Math.abs(y - player.y);
-                    int k = 0;
-                    while (flag && k < distY) {
-                        flag = mapa.canWalk(new Point(x, menorY + k));
-//                        System.out.println("flag " + flag + " xpla " + player.x + " ypla " + player.y);
-//                        System.out.println("flag " + flag + " x " + x + " y+k " + menorY + k);
-                        k++;
-                    }
-                    found = (k == distY);
-                } else if (y == player.y) {
-                    int distX = Math.abs(x - player.x);
-                    int k = 0;
-                    while (flag && k < distX) {
-                        flag = mapa.canWalk(new Point(menorX + k, y));
-                        k++;
-                    }
-                    found = (k == distX);
-                } else if (x != player.x && y != player.y) {
-                    int distX = Math.abs(x - player.x);
-                    int distY = Math.abs(y - player.y);
-                    if (distX == distY) {
-                        int k = 0;
-                        while (flag && k < distX) {
-                            flag = mapa.canWalk(new Point(menorX + k, menorY + k));
-                            k++;
-                        }
-                        found = (k == distX);
-                    }
-                }
-
-                System.out.println("found " + found);
-//                System.out.println("flag " + flag + " x " + x + " y " + y);
-//                System.out.println("flag " + flag + " xpla " + player.x + " ypla " + player.y);
+                found = canFire(new Point(x, y), new Point(player.x, player.y));
             }
             i++;
         }
@@ -292,6 +253,42 @@ public class AgenteEdimbrujo {
             xy = new Point(players.get(i).x, players.get(i).y);
         }
         return xy;
+    }
+
+    private static boolean canFire(Point xy, Point wz) {
+        boolean flag = true;
+        boolean found = false;
+        int menorX = (xy.x < wz.x) ? xy.x : wz.x;
+        int menorY = (xy.y < wz.y) ? xy.y : wz.y;
+        if (xy.x == wz.x) {
+            int distY = Math.abs(xy.y - player.y);
+            int k = 0;
+            while (flag && k < distY) {
+                flag = mapa.canWalk(new Point(xy.x, menorY + k));
+                k++;
+            }
+            found = (k == distY && flag);
+        } else if (xy.y == wz.y) {
+            int distX = Math.abs(xy.x - wz.x);
+            int k = 0;
+            while (flag && k < distX) {
+                flag = mapa.canWalk(new Point(menorX + k, xy.y));
+                k++;
+            }
+            found = (k == distX && flag);
+        } else if (xy.x != wz.x && xy.y != wz.y) {
+            int distX = Math.abs(xy.x - wz.x);
+            int distY = Math.abs(xy.y - wz.y);
+            if (distX == distY) {
+                int k = 0;
+                while (flag && k < distX) {
+                    flag = mapa.canWalk(new Point(menorX + k, menorY + k));
+                    k++;
+                }
+                found = (k == distX && flag);
+            }
+        }
+        return found;
     }
 
     private static String calcMove(Point xy) {
