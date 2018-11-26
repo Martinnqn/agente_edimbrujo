@@ -12,7 +12,7 @@ import java.util.LinkedList;
  *
  * @author Martin
  */
-public class Tower {
+public class Tower extends Entity{
 
     public boolean dead;
     public int width;
@@ -45,6 +45,7 @@ public class Tower {
         return area;
     }
 
+    @Override
     public boolean colision(Point xy) {
         boolean res = false;
         int i = 0;

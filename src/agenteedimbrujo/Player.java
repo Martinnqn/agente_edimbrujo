@@ -5,11 +5,13 @@
  */
 package agenteedimbrujo;
 
+import java.awt.Point;
+
 /**
  *
  * @author Martin
  */
-public class Player {
+public class Player extends Entity {
 
     public boolean dead;
     public int team;
@@ -23,6 +25,11 @@ public class Player {
         this.role = role;
         this.x = x;
         this.y = y;
+    }
+
+    @Override
+    public boolean colision(Point xy) {
+        return (xy.x == x && xy.y == y);
     }
 
 }

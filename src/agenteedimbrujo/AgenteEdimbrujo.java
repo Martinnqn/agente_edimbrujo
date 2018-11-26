@@ -32,10 +32,10 @@ public class AgenteEdimbrujo {
     private static String fullState;
     private static Mapa mapa;
     private static LinkedList<Spawn> spawns = new LinkedList<>();
-    private static LinkedList<Tower> towers = new LinkedList<>();
+    private static LinkedList<Entity> towers = new LinkedList<>();
     private static String nameT;
     private static Player player;
-    private static LinkedList<Player> players = new LinkedList<>();
+    private static LinkedList<Entity> players = new LinkedList<>();
     private static boolean startGame = false;
     private static Point posAnterior = new Point(-1, -1);
     private static String[] moves = {"up", "down", "left", "right", "upleft", "upright", "downleft", "downright"};
@@ -191,12 +191,12 @@ public class AgenteEdimbrujo {
         Point xy = null;
         int dist = 80000;
         int auxDist;
-        for (Tower tower : towers) {
-            if (!tower.dead) {
-                auxDist = Math.abs(tower.width - player.x) + Math.abs(tower.height - player.y);
+        for (Entity tower : towers) {
+            if (!((Tower) tower).dead) {
+                auxDist = Math.abs(((Tower) tower).width - player.x) + Math.abs(((Tower) tower).height - player.y);
                 if (auxDist < dist) {
                     dist = auxDist;
-                    xy = new Point(tower.width, tower.height);
+                    xy = new Point(((Tower) tower).width, ((Tower) tower).height);
                 }
             }
         }
@@ -207,12 +207,12 @@ public class AgenteEdimbrujo {
         Point xy = null;
         int dist = 80000;
         int auxDist;
-        for (Player pl : players) {
-            if (pl.team != player.team && !pl.dead) {
-                auxDist = (pl.x - player.x) + (pl.y - player.y);
+        for (Entity pl : players) {
+            if (((Player) pl).team != player.team && !((Player) pl).dead) {
+                auxDist = (((Player) pl).x - player.x) + (((Player) pl).y - player.y);
                 if (auxDist < dist) {
                     dist = auxDist;
-                    xy = new Point(pl.x, pl.y);
+                    xy = new Point(((Player) pl).x, ((Player) pl).y);
                 }
             }
         }
@@ -222,20 +222,24 @@ public class AgenteEdimbrujo {
     private static Point canFireTower() {
         Point xy = null;
         int i = 0;
-        int x;
-        int y;
+        int j = 0;
         boolean found = false;
+        LinkedList<Point> tw = new LinkedList<>();
         while (i < towers.size() && !found) {
-            if (!towers.get(i).dead) {
-                x = towers.get(i).width;
-                y = towers.get(i).height;
-                found = canFire(new Point(x, y), new Point(player.x, player.y));
+            if (!((Tower) towers.get(i)).dead) {
+                tw = ((Tower) towers.get(i)).getArea();
+                j = 0;
+                while (j < tw.size() && !found) {
+                    found = canFire(tw.get(j), new Point(player.x, player.y));
+                    j++;
+                }
             }
             i++;
         }
         if (found) {
             i--;
-            xy = new Point(towers.get(i).width, towers.get(i).height);
+            j--;
+            xy = tw.get(j);
         }
         return xy;
     }
@@ -247,16 +251,16 @@ public class AgenteEdimbrujo {
         int y;
         boolean found = false;
         while (i < players.size() && !found) {
-            if (players.get(i).team != player.team && !players.get(i).dead) {
-                x = players.get(i).x;
-                y = players.get(i).y;
+            if (((Player) players.get(i)).team != player.team && !((Player) players.get(i)).dead) {
+                x = ((Player) players.get(i)).x;
+                y = ((Player) players.get(i)).y;
                 found = canFire(new Point(x, y), new Point(player.x, player.y));
             }
             i++;
         }
         if (found) {
             i--;
-            xy = new Point(players.get(i).x, players.get(i).y);
+            xy = new Point(((Player) players.get(i)).x, ((Player) players.get(i)).y);
         }
         return xy;
     }
@@ -407,11 +411,9 @@ public class AgenteEdimbrujo {
         move = movs[0];
         while (i < movs.length && (!canWalk(pos[i - 1])
                 || (pos[i - 1].x == posAnterior.x && pos[i - 1].y == posAnterior.y))) {
-            System.out.println("esta en " + player.x + "," + player.y + " y " + move + " " + movs[i - 1] + " en " + pos[i - 1] + " no se puede.");
+            System.out.println("quiere moverse a " + pos[i - 1].x + "," + pos[i - 1].y + " y " + move + " " + movs[i - 1] + " en " + pos[i - 1] + " no se puede.");
+            System.out.println("PosAnterior " + posAnterior);
             System.out.println("da misma posicion " + (pos[i - 1].x == posAnterior.x && pos[i - 1].y == posAnterior.y));
-            if (pos[i - 1].x == posAnterior.x && pos[i - 1].y == posAnterior.y) {
-                posAnterior = pos[i];
-            }
             move = movs[i];
             i++;
         }
@@ -420,6 +422,7 @@ public class AgenteEdimbrujo {
             SecureRandom random = new SecureRandom();
             move = moves[random.nextInt(1000000000) % 8];
         }
+        posAnterior = new Point(player.x, player.y);
 
         System.out.println("elige " + move + " " + pos[i - 1] + ".");
         return move;
@@ -433,8 +436,14 @@ public class AgenteEdimbrujo {
     private static boolean canWalk(Point xy) {
         boolean res = mapa.canWalk(xy);
         if (res) {
-            for (Tower tower : towers) {
+            for (Entity tower : towers) {
                 res = res && !tower.colision(xy);
+            }
+        }
+
+        if (res) {
+            for (Entity pl : players) {
+                res = res && !pl.colision(xy);
             }
         }
 
