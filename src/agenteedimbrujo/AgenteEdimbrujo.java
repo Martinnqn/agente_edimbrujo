@@ -44,7 +44,6 @@ public class AgenteEdimbrujo {
     public static void main(String[] args) throws IOException {
         try {
             conexion con = new conexion("http://localhost:8080/Edimbrujo/webservice/server");
-            String[] move = {"up", "down", "left", "right", "upleft", "upright", "downleft", "downright"};
             nameT = con.iniciar("__-__");
             System.out.println(nameT);
             fullStatic = con.getFullStaticState();
@@ -194,10 +193,10 @@ public class AgenteEdimbrujo {
         int auxDist;
         for (Entity tower : towers) {
             if (!((Tower) tower).dead) {
-                auxDist = Math.abs(((Tower) tower).width - player.x) + Math.abs(((Tower) tower).height - player.y);
+                auxDist = Math.abs(((Tower) tower).x - player.x) + Math.abs(((Tower) tower).y - player.y);
                 if (auxDist < dist) {
                     dist = auxDist;
-                    xy = new Point(((Tower) tower).width, ((Tower) tower).height);
+                    xy = new Point(((Tower) tower).x, ((Tower) tower).y);
                 }
             }
         }
