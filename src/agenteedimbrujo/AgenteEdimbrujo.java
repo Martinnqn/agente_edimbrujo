@@ -39,6 +39,7 @@ public class AgenteEdimbrujo {
     private static boolean startGame = false;
     private static Point posAnterior = new Point(-1, -1);
     private static String[] moves = {"up", "down", "left", "right", "upleft", "upright", "downleft", "downright"};
+    private static SecureRandom random = new SecureRandom();
 
     public static void main(String[] args) throws IOException {
         try {
@@ -305,6 +306,7 @@ public class AgenteEdimbrujo {
         String move = "";
         int x = player.x;
         int y = player.y;
+        int r = 0;
         Point[] pos = new Point[4];
 
         String[] movs = new String[4];
@@ -359,69 +361,93 @@ public class AgenteEdimbrujo {
             movs[3] = "left";
         } else if (xy.x == x && xy.y > y) {
             System.out.println("Aca 5");
-            x++;
-            y++;
-            pos[0] = new Point(x, y);
-            pos[1] = new Point(--x, y);
-            pos[2] = new Point(++x, --y);
-            pos[3] = new Point(x - 2, y);
-            movs[0] = "downright";
-            movs[1] = "down";
-            movs[2] = "right";
-            movs[3] = "left";
+            r = random.nextInt(1000000000) % 2;
+            if (r == 0) {
+                x++;
+                y++;
+                pos[0] = new Point(x, y);
+                pos[1] = new Point(--x, y);
+                pos[2] = new Point(++x, --y);
+                pos[3] = new Point(x - 2, y);
+                movs[0] = "downright";
+                movs[1] = "down";
+                movs[2] = "right";
+                movs[3] = "left";
+            } else {
+                move = moves[random.nextInt(1000000000) % 8];
+            }
         } else if (xy.x == x && xy.y < y) {
             System.out.println("Aca 6");
-            x++;
-            y--;
-            pos[0] = new Point(x, y);
-            pos[1] = new Point(--x, y);
-            pos[2] = new Point(++x, ++y);
-            pos[3] = new Point(x - 2, y);
-            movs[0] = "upright";
-            movs[1] = "up";
-            movs[2] = "right";
-            movs[3] = "left";
+            r = random.nextInt(1000000000) % 2;
+            if (r == 0) {
+                x++;
+                y--;
+                pos[0] = new Point(x, y);
+                pos[1] = new Point(--x, y);
+                pos[2] = new Point(++x, ++y);
+                pos[3] = new Point(x - 2, y);
+                movs[0] = "upright";
+                movs[1] = "up";
+                movs[2] = "right";
+                movs[3] = "left";
+            } else {
+                move = moves[random.nextInt(1000000000) % 8];
+            }
         } else if (xy.x > x && xy.y == y) {
             System.out.println("Aca 7");
-            x++;
-            y--;
-            pos[0] = new Point(x, y);
-            pos[1] = new Point(--x, y);
-            pos[2] = new Point(++x, ++y);
-            pos[3] = new Point(x - 2, y);
-            movs[0] = "upright";
-            movs[1] = "up";
-            movs[2] = "right";
-            movs[3] = "left";
+            r = random.nextInt(1000000000) % 2;
+            if (r == 0) {
+                x++;
+                y--;
+                pos[0] = new Point(x, y);
+                pos[1] = new Point(--x, y);
+                pos[2] = new Point(++x, ++y);
+                pos[3] = new Point(x - 2, y);
+                movs[0] = "upright";
+                movs[1] = "up";
+                movs[2] = "right";
+                movs[3] = "left";
+            } else {
+                move = moves[random.nextInt(1000000000) % 8];
+            }
         } else if (xy.x < x && xy.y == y) {
             System.out.println("Aca 8");
-            x--;
-            y--;
-            pos[0] = new Point(x, y);
-            pos[1] = new Point(++x, y);
-            pos[2] = new Point(--x, ++y);
-            pos[3] = new Point(x + 2, y);
-            movs[0] = "upleft";
-            movs[1] = "up";
-            movs[2] = "left";
-            movs[3] = "right";
+            r = random.nextInt(1000000000) % 2;
+            if (r == 0) {
+                x--;
+                y--;
+                pos[0] = new Point(x, y);
+                pos[1] = new Point(++x, y);
+                pos[2] = new Point(--x, ++y);
+                pos[3] = new Point(x + 2, y);
+                movs[0] = "upleft";
+                movs[1] = "up";
+                movs[2] = "left";
+                movs[3] = "right";
+            } else {
+                move = moves[random.nextInt(1000000000) % 8];
+            }
         }
 
         int i = 1;
-        move = movs[0];
-        while (i < movs.length && (!canWalk(pos[i - 1])
-                || (pos[i - 1].x == posAnterior.x && pos[i - 1].y == posAnterior.y))) {
-            System.out.println("quiere moverse a " + pos[i - 1].x + "," + pos[i - 1].y + " y " + move + " " + movs[i - 1] + " en " + pos[i - 1] + " no se puede.");
-            System.out.println("PosAnterior " + posAnterior);
-            System.out.println("da misma posicion " + (pos[i - 1].x == posAnterior.x && pos[i - 1].y == posAnterior.y));
-            move = movs[i];
-            i++;
+        if (r == 0) {
+            move = movs[0];
+            while (i < movs.length && (!canWalk(pos[i - 1])
+                    || (pos[i - 1].x == posAnterior.x && pos[i - 1].y == posAnterior.y))) {
+//            System.out.println("quiere moverse a " + pos[i - 1].x + "," + pos[i - 1].y + " con " + move + ": no se puede.");
+//            System.out.println("PosAnterior " + posAnterior);
+//            System.out.println("da misma posicion " + (pos[i - 1].x == posAnterior.x && pos[i - 1].y == posAnterior.y));
+                move = movs[i];
+                i++;
+            }
+            //si la ultima accion es en la misma posicion donde estaba en el turno anterior, o la posicion actual
+            //es la misma donde estaba el turno anterior, elige una random
+            if ((pos[i - 1].x == posAnterior.x && pos[i - 1].y == posAnterior.y)
+                    || (player.x == posAnterior.x && player.y == posAnterior.y)) {
+                move = moves[random.nextInt(1000000000) % 8];
+            }
         }
-        //si la ultima accion da la misma posicion donde estaba, elige una random
-        if (pos[i - 1].x == posAnterior.x && pos[i - 1].y == posAnterior.y) {
-            SecureRandom random = new SecureRandom();
-            move = moves[random.nextInt(1000000000) % 8];
-        }
+
         posAnterior = new Point(player.x, player.y);
 
         System.out.println("elige " + move + " " + pos[i - 1] + ".");
