@@ -7,6 +7,7 @@ package agenteedimbrujo;
 
 import java.awt.Point;
 import java.io.IOException;
+import java.security.SecureRandom;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -36,6 +37,8 @@ public class AgenteEdimbrujo {
     private static Player player;
     private static LinkedList<Player> players = new LinkedList<>();
     private static boolean startGame = false;
+    private static Point posAnterior = new Point(-1, -1);
+    private static String[] moves = {"up", "down", "left", "right", "upleft", "upright", "downleft", "downright"};
 
     public static void main(String[] args) throws IOException {
         try {
@@ -143,7 +146,7 @@ public class AgenteEdimbrujo {
         int i = 0;
         while ((dinamicS = (JSONObject) json.get(i + "")) != null) {
             JSONObject match;
-            System.out.println("Recibe " + dinamicS.toString());
+            //System.out.println("Recibe " + dinamicS.toString());
             if ((match = (JSONObject) dinamicS.get("Match")) != null) {
                 startGame = (boolean) match.get("startGame");
             }
@@ -173,10 +176,11 @@ public class AgenteEdimbrujo {
                 if ((attrs = (JSONObject) dinamicS.get("Tower")) != null) {
                     String id = attrs.get("id").toString();
                     boolean dead = (boolean) attrs.get("dead");
+                    int width = (int) (long) attrs.get("width");
+                    int height = (int) (long) attrs.get("height");
                     int x = (int) (long) ((JSONObject) ((JSONObject) attrs.get("super")).get("Entity")).get("x");
                     int y = (int) (long) ((JSONObject) ((JSONObject) attrs.get("super")).get("Entity")).get("y");
-                    System.out.println("LA TOWER ESTA "+dead);
-                    towers.add(new Tower(dead, x, y, id));
+                    towers.add(new Tower(dead, width, height, x, y, id));
                 }
             }
             i++;
@@ -189,10 +193,10 @@ public class AgenteEdimbrujo {
         int auxDist;
         for (Tower tower : towers) {
             if (!tower.dead) {
-                auxDist = Math.abs(tower.x - player.x) + Math.abs(tower.y - player.y);
+                auxDist = Math.abs(tower.width - player.x) + Math.abs(tower.height - player.y);
                 if (auxDist < dist) {
                     dist = auxDist;
-                    xy = new Point(tower.x, tower.y);
+                    xy = new Point(tower.width, tower.height);
                 }
             }
         }
@@ -222,14 +226,16 @@ public class AgenteEdimbrujo {
         int y;
         boolean found = false;
         while (i < towers.size() && !found) {
-            x = towers.get(i).x;
-            y = towers.get(i).y;
-            found = canFire(new Point(x, y), new Point(player.x, player.y));
+            if (!towers.get(i).dead) {
+                x = towers.get(i).width;
+                y = towers.get(i).height;
+                found = canFire(new Point(x, y), new Point(player.x, player.y));
+            }
             i++;
         }
         if (found) {
             i--;
-            xy = new Point(towers.get(i).x, towers.get(i).y);
+            xy = new Point(towers.get(i).width, towers.get(i).height);
         }
         return xy;
     }
@@ -296,11 +302,9 @@ public class AgenteEdimbrujo {
         int x = player.x;
         int y = player.y;
         Point[] pos = new Point[4];
+
         String[] movs = new String[4];
-        movs[0] = "upleft";
-        movs[1] = "up";
-        movs[2] = "left";
-        movs[2] = "right";
+
         if (xy.x < x && xy.y < y) {
             System.out.println("Aca 1");
             x--;
@@ -308,11 +312,11 @@ public class AgenteEdimbrujo {
             pos[0] = new Point(x, y);
             pos[1] = new Point(++x, y);
             pos[2] = new Point(--x, ++y);
-            pos[3] = new Point(x, ++y);
+            pos[3] = new Point(x + 2, y);
             movs[0] = "upleft";
             movs[1] = "up";
             movs[2] = "left";
-            movs[3] = "downleft";
+            movs[3] = "right";
         } else if (xy.x < x && xy.y > y) {
             System.out.println("Aca 2");
             x--;
@@ -320,11 +324,11 @@ public class AgenteEdimbrujo {
             pos[0] = new Point(x, y);
             pos[1] = new Point(++x, y);
             pos[2] = new Point(--x, --y);
-            pos[3] = new Point(x, --y);
+            pos[3] = new Point(x + 2, y);
             movs[0] = "downleft";
             movs[1] = "down";
             movs[2] = "left";
-            movs[3] = "upleft";
+            movs[3] = "right";
         } else if (xy.x > x && xy.y < y) {
             System.out.println("Aca 3");
             x++;
@@ -332,12 +336,11 @@ public class AgenteEdimbrujo {
             pos[0] = new Point(x, y);
             pos[1] = new Point(--x, y);
             pos[2] = new Point(++x, ++y);
-            pos[3] = new Point(x, --y);
+            pos[3] = new Point(x - 2, y);
             movs[0] = "upright";
             movs[1] = "up";
             movs[2] = "right";
-            movs[3] = "downright";
-
+            movs[3] = "left";
         } else if (xy.x > x && xy.y > y) {
             System.out.println("Aca 4");
             x++;
@@ -345,35 +348,35 @@ public class AgenteEdimbrujo {
             pos[0] = new Point(x, y);
             pos[1] = new Point(--x, y);
             pos[2] = new Point(++x, --y);
-            pos[3] = new Point(x, --y);
+            pos[3] = new Point(x - 2, y);
             movs[0] = "downright";
             movs[1] = "down";
             movs[2] = "right";
-            movs[3] = "upright";
+            movs[3] = "left";
         } else if (xy.x == x && xy.y > y) {
             System.out.println("Aca 5");
-            x--;
+            x++;
             y++;
             pos[0] = new Point(x, y);
-            pos[1] = new Point(++x, y);
-            pos[2] = new Point(--x, --y);
-            pos[3] = new Point(x + 2, y);
-            movs[0] = "downleft";
+            pos[1] = new Point(--x, y);
+            pos[2] = new Point(++x, --y);
+            pos[3] = new Point(x - 2, y);
+            movs[0] = "downright";
             movs[1] = "down";
-            movs[2] = "left";
-            movs[3] = "right";
+            movs[2] = "right";
+            movs[3] = "left";
         } else if (xy.x == x && xy.y < y) {
             System.out.println("Aca 6");
-            x--;
+            x++;
             y--;
             pos[0] = new Point(x, y);
-            pos[1] = new Point(++x, y);
-            pos[2] = new Point(--x, ++y);
-            pos[3] = new Point(x + 2, y);
-            movs[0] = "upleft";
+            pos[1] = new Point(--x, y);
+            pos[2] = new Point(++x, ++y);
+            pos[3] = new Point(x - 2, y);
+            movs[0] = "upright";
             movs[1] = "up";
-            movs[2] = "left";
-            movs[3] = "right";
+            movs[2] = "right";
+            movs[3] = "left";
         } else if (xy.x > x && xy.y == y) {
             System.out.println("Aca 7");
             x++;
@@ -402,11 +405,22 @@ public class AgenteEdimbrujo {
 
         int i = 1;
         move = movs[0];
-        while (i < movs.length && !mapa.canWalk(pos[i - 1])) {
-            System.out.println(move + " en " + pos[i - 1] + " no se puede.");
+        while (i < movs.length && (!canWalk(pos[i - 1])
+                || (pos[i - 1].x == posAnterior.x && pos[i - 1].y == posAnterior.y))) {
+            System.out.println("esta en " + player.x + "," + player.y + " y " + move + " " + movs[i - 1] + " en " + pos[i - 1] + " no se puede.");
+            System.out.println("da misma posicion " + (pos[i - 1].x == posAnterior.x && pos[i - 1].y == posAnterior.y));
+            if (pos[i - 1].x == posAnterior.x && pos[i - 1].y == posAnterior.y) {
+                posAnterior = pos[i];
+            }
             move = movs[i];
             i++;
         }
+        //si la ultima accion da la misma posicion donde estaba, elige una random
+        if (pos[i - 1].x == posAnterior.x && pos[i - 1].y == posAnterior.y) {
+            SecureRandom random = new SecureRandom();
+            move = moves[random.nextInt(1000000000) % 8];
+        }
+
         System.out.println("elige " + move + " " + pos[i - 1] + ".");
         return move;
     }
@@ -414,6 +428,17 @@ public class AgenteEdimbrujo {
     private static void cleanLists() {
         players.clear();
         towers.clear();
+    }
+
+    private static boolean canWalk(Point xy) {
+        boolean res = mapa.canWalk(xy);
+        if (res) {
+            for (Tower tower : towers) {
+                res = res && !tower.colision(xy);
+            }
+        }
+
+        return res;
     }
 
 }
