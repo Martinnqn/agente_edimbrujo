@@ -9,9 +9,7 @@ import java.awt.Point;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.json.simple.JSONArray;
@@ -37,34 +35,42 @@ public class AgenteEdimbrujo {
     private static Player player;
     private static LinkedList<Entity> players = new LinkedList<>();
     private static boolean startGame = false;
+    private static boolean jugo = false;
     private static Point posAnterior = new Point(-1, -1);
     private static String[] moves = {"up", "down", "left", "right", "upleft", "upright", "downleft", "downright"};
     private static SecureRandom random = new SecureRandom();
 
     public static void main(String[] args) throws IOException {
         try {
-            conexion con = new conexion("http://localhost:8080/Edimbrujo/webservice/server");
-            nameT = con.iniciar("__-__");
-            System.out.println(nameT);
-            fullStatic = con.getFullStaticState();
-            cargarStaticS();
-            con.makeAction("ready");
-            Accion acc;
-            //fullState = con.getFullState();
-            while (true) {
-                fullState = con.getFullState();
-                //System.out.println("full " + fullState);
-                cargarDinamicS();
-                if (startGame && player != null && !player.dead) {
-                    acc = selectAction();
-                    if (acc != null) {
-                        switch (acc.nombre) {
-                            case "move":
-                                con.makeAction(acc.accion);
-                                break;
-                            case "fire":
-                                con.makeRangeAtack(acc.accion);
-                                break;
+            if (args.length != 2) {
+                System.out.println("Ingresar URL y Nombre por parámetro. ");
+                System.out.println("Ejemplo: ");
+                System.out.println("java -jar file.jar http://localhost:8080/Edimbrujo/webservice/server NombreBot");
+            } else {
+                //http://localhost:8080/Edimbrujo/webservice/server
+                conexion con = new conexion(args[0]);
+                nameT = con.iniciar(args[1]);
+                System.out.println(nameT);
+                fullStatic = con.getFullStaticState();
+                cargarStaticS();
+                con.makeAction("ready");
+                Accion acc;
+                //fullState = con.getFullState();
+                while (true) {
+                    fullState = con.getFullState();
+                    //System.out.println("full " + fullState);
+                    cargarDinamicS();
+                    if (startGame && player != null && !player.dead) {
+                        acc = selectAction();
+                        if (acc != null) {
+                            switch (acc.nombre) {
+                                case "move":
+                                    con.makeAction(acc.accion);
+                                    break;
+                                case "fire":
+                                    con.makeRangeAtack(acc.accion);
+                                    break;
+                            }
                         }
                     }
                 }
@@ -311,7 +317,7 @@ public class AgenteEdimbrujo {
         String[] movs = new String[4];
 
         if (xy.x < x && xy.y < y) {
-            System.out.println("Aca 1");
+//            System.out.println("Aca 1");
             x--;
             y--;
             pos[0] = new Point(x, y);
@@ -323,7 +329,7 @@ public class AgenteEdimbrujo {
             movs[2] = "left";
             movs[3] = "right";
         } else if (xy.x < x && xy.y > y) {
-            System.out.println("Aca 2");
+//            System.out.println("Aca 2");
             x--;
             y++;
             pos[0] = new Point(x, y);
@@ -335,7 +341,7 @@ public class AgenteEdimbrujo {
             movs[2] = "left";
             movs[3] = "right";
         } else if (xy.x > x && xy.y < y) {
-            System.out.println("Aca 3");
+//            System.out.println("Aca 3");
             x++;
             y--;
             pos[0] = new Point(x, y);
@@ -347,7 +353,7 @@ public class AgenteEdimbrujo {
             movs[2] = "right";
             movs[3] = "left";
         } else if (xy.x > x && xy.y > y) {
-            System.out.println("Aca 4");
+//            System.out.println("Aca 4");
             x++;
             y++;
             pos[0] = new Point(x, y);
@@ -359,7 +365,7 @@ public class AgenteEdimbrujo {
             movs[2] = "right";
             movs[3] = "left";
         } else if (xy.x == x && xy.y > y) {
-            System.out.println("Aca 5");
+//            System.out.println("Aca 5");
             r = random.nextInt(1000000000) % 2;
             if (r == 0) {
                 x++;
@@ -376,7 +382,7 @@ public class AgenteEdimbrujo {
                 move = moves[random.nextInt(1000000000) % 8];
             }
         } else if (xy.x == x && xy.y < y) {
-            System.out.println("Aca 6");
+//            System.out.println("Aca 6");
             r = random.nextInt(1000000000) % 2;
             if (r == 0) {
                 x++;
@@ -393,7 +399,7 @@ public class AgenteEdimbrujo {
                 move = moves[random.nextInt(1000000000) % 8];
             }
         } else if (xy.x > x && xy.y == y) {
-            System.out.println("Aca 7");
+//            System.out.println("Aca 7");
             r = random.nextInt(1000000000) % 2;
             if (r == 0) {
                 x++;
@@ -410,7 +416,7 @@ public class AgenteEdimbrujo {
                 move = moves[random.nextInt(1000000000) % 8];
             }
         } else if (xy.x < x && xy.y == y) {
-            System.out.println("Aca 8");
+//            System.out.println("Aca 8");
             r = random.nextInt(1000000000) % 2;
             if (r == 0) {
                 x--;
