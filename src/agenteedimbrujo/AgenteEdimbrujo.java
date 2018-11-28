@@ -1,7 +1,38 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+Para ejecutar:  Ingresar URL y Nombre por parámetro. Ejemplo: 
+"java -jar AgenteEdimbrujo.jar http://localhost:8080/Edimbrujo/webservice/server NombreBot"
+
+Movimiento: para moverse, tiene planteado 8 casos considerando la posición del
+objetivo (arriba a la izquierda, arriba a la derecha, abajo a la izquierda, etc,
+considerando como casos diferentes los casos en que se encuentra en el mismo "x" o "y").
+
+Por cada caso tiene un pool de cuatro acciones de movimiento, ordenado por preferencia 
+de mayor a menor, en función de cuál cumple mejor el objetivo. Si no puede utilizar la
+de mayor preferencia (por algún obstáculo), prueba con la siguiente. Si no puede
+utilizar ninguna, elige una aleatoria del conjunto total de acciones de movimiento.
+
+Para detectar si el movimiento del turno anterior surgió efecto, guarda su posición 
+anterior y la compara con la actual. Por ejemplo, cuando elige moverse a una posición,
+no tiene información a priori de si otro jugador también quizo moverse a esa posición,
+y como el juego no permite esto, los agentes no se moverían de su lugar, pero seguirían
+creyendo que están haciendo un movimiento válido (por lo tanto, en el siguiente turno, 
+si están en la misma circunstancia, elegirían la misma acción, entrando en deadlock). 
+Cuando detecta livelock o deadlock, elige un movimiento aleatorio. 
+
+Guardar su posición anterior también evita que elija un movimiento que lo lleve 
+a la situación anterior, y lo obliga a buscar otra alternativa.
+
+Los casos en los que se encuentra en la misma "x" o misma "y" que su objetivo, 
+son casos que pueden llevar a hacer ciclos, por esto, para elegir un movimiento 
+en estos casos, tiene un 50% de probabilidad de elegir un movimiento que cumple 
+parcialmente el objetivo, y otro 50% de probabilidad de elegir un movimiento
+completamente aleatorio.
+
+Las primeras tres acciones de cada pool de acciones ayudan a acercarse al objetivo.
+La cuarta opción va en contra de las primeras tres, con la intención de obligar al 
+agente a buscar un camino alternativo en sentido contrario, si ninguna de las primeras
+tres se puede utilizar. Esto hace que el pool sea cohesivo, pero que no se atasque con
+obstáculos.
  */
 package agenteedimbrujo;
 
@@ -112,6 +143,11 @@ public class AgenteEdimbrujo {
         return res;
     }
 
+    /**
+     * Cargar los estados estáticos.
+     *
+     * @throws ParseException
+     */
     private static void cargarStaticS() throws ParseException {
         HashMap<Point, Integer> cells = new HashMap<>();
         int width;
@@ -144,6 +180,11 @@ public class AgenteEdimbrujo {
         }
     }
 
+    /**
+     * Cargar los estados dinámicos.
+     *
+     * @throws ParseException
+     */
     private static void cargarDinamicS() throws ParseException {
         cleanLists();
         JSONParser parser = new JSONParser();
@@ -195,7 +236,7 @@ public class AgenteEdimbrujo {
 
     private static Point closestTower() {
         Point xy = null;
-        int dist = 80000;
+        int dist = Integer.MAX_VALUE;
         int auxDist;
         for (Entity tower : towers) {
             if (!((Tower) tower).dead) {
@@ -211,7 +252,7 @@ public class AgenteEdimbrujo {
 
     private static Point closestEnemy() {
         Point xy = null;
-        int dist = 80000;
+        int dist = Integer.MAX_VALUE;
         int auxDist;
         for (Entity pl : players) {
             if (((Player) pl).team != player.team && !((Player) pl).dead) {
@@ -225,6 +266,12 @@ public class AgenteEdimbrujo {
         return xy;
     }
 
+    /**
+     * Devuelve un punto xy si puede dispararle a una torre. Devuelve null si no
+     * puede.
+     *
+     * @return
+     */
     private static Point canFireTower() {
         Point xy = null;
         int i = 0;
@@ -250,6 +297,12 @@ public class AgenteEdimbrujo {
         return xy;
     }
 
+    /**
+     * Devuelve un punto xy si puede dispararle a un enemigo. Devuelve null si
+     * no puede.
+     *
+     * @return
+     */
     private static Point canFireEnemy() {
         Point xy = null;
         int i = 0;
@@ -271,6 +324,14 @@ public class AgenteEdimbrujo {
         return xy;
     }
 
+    /**
+     * Devuelve true si el camino entre xy y wz es recto y además no tiene
+     * obstáculos.
+     *
+     * @param xy
+     * @param wz
+     * @return
+     */
     private static boolean canFire(Point xy, Point wz) {
         boolean flag = true;
         boolean found = false;
@@ -307,6 +368,12 @@ public class AgenteEdimbrujo {
         return found;
     }
 
+    /**
+     * Calculo el siguiente movimiento para ir hacia xy.
+     *
+     * @param xy
+     * @return
+     */
     private static String calcMove(Point xy) {
         String move = "";
         int x = player.x;
@@ -439,9 +506,6 @@ public class AgenteEdimbrujo {
             move = movs[0];
             while (i < movs.length && (!canWalk(pos[i - 1])
                     || (pos[i - 1].x == posAnterior.x && pos[i - 1].y == posAnterior.y))) {
-//            System.out.println("quiere moverse a " + pos[i - 1].x + "," + pos[i - 1].y + " con " + move + ": no se puede.");
-//            System.out.println("PosAnterior " + posAnterior);
-//            System.out.println("da misma posicion " + (pos[i - 1].x == posAnterior.x && pos[i - 1].y == posAnterior.y));
                 move = movs[i];
                 i++;
             }
@@ -459,11 +523,21 @@ public class AgenteEdimbrujo {
         return move;
     }
 
+    /**
+     * Limpia las listas cargadas con elementos dinamicos.
+     */
     private static void cleanLists() {
         players.clear();
         towers.clear();
     }
 
+    /**
+     * Devuelve true si xy es caminable (segun el mapa), y si no tiene
+     * obstáculos. Torres y players son considerados obstáculos.
+     *
+     * @param xy
+     * @return
+     */
     private static boolean canWalk(Point xy) {
         boolean res = mapa.canWalk(xy);
         if (res) {
@@ -477,11 +551,6 @@ public class AgenteEdimbrujo {
                 res = res && !pl.colision(xy);
             }
         }
-
         return res;
     }
-
 }
-
-//
-// 
